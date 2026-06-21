@@ -1,103 +1,105 @@
-# Carnet de voyage — itinéraires immersifs
+# Travel Journal — immersive itineraries
 
-Un site qui présente des voyages sous forme d'itinéraires immersifs : la carte
-trace la route au fil du défilement, chaque journée se révèle avec photos,
-vidéos et prix, et le visiteur compose ses expériences pendant que l'estimation
-se met à jour en direct.
+A site that presents trips as immersive itineraries: the map draws the route as
+you scroll, each day unfolds with photos, videos and prices, and the visitor
+composes their experiences while the estimate updates live.
 
-- **Côté visiteur** : lecture + sélection d'options cochables → total et
-  récapitulatif (avec demande de devis).
-- **Côté admin** : création de plusieurs voyages, édition des étapes, médias,
-  prix et options, publication.
+- **Visitor side**: reading + selecting checkable options → running total and
+  summary (with a quote request).
+- **Admin side**: create multiple trips, edit steps, media, prices and options,
+  publish.
+
+> Note: the trips themselves (Iceland, Albania, Bulgaria, Hurghada) are written in
+> French on purpose — this documentation is in English so the app can be reused
+> universally.
 
 ## Stack
 
 Next.js 15 (App Router) · TypeScript · Prisma · SQLite (dev) / PostgreSQL (prod)
-· authentification par session JWT (cookie httpOnly, mots de passe hachés
-bcrypt) · Leaflet + fond de carte CARTO sombre (sans clé API) · Framer Motion ·
-Tailwind CSS.
+· JWT session authentication (httpOnly cookie, bcrypt-hashed passwords) · Leaflet
++ CARTO dark basemap (no API key) · Framer Motion · Tailwind CSS.
 
-## Démarrage local
+## Local setup
 
 ```bash
 npm install
-cp .env .env.local        # ou gardez .env tel quel pour le dev
-npx prisma db push        # crée la base SQLite (dev.db)
-npm run db:seed           # charge le voyage Islande de démo + l'admin
+cp .env .env.local        # or keep .env as-is for development
+npx prisma db push        # creates the SQLite database (dev.db)
+npm run db:seed           # loads the demo Iceland trip + the admin account
 npm run dev
 ```
 
-- Site : http://localhost:3000
-- Voyage démo : http://localhost:3000/voyage/islande-cote-sud
-- Admin : http://localhost:3000/admin → **admin@voyage.test / voyage123**
+- Site: http://localhost:3000
+- Demo trip: http://localhost:3000/voyage/islande-cote-sud
+- Admin: http://localhost:3000/admin → **admin@voyage.test / voyage123**
 
-> Réinitialiser les données : `npm run db:reset`
+> Reset the data: `npm run db:reset`
 
-### Charger tous les voyages d'exemple
+### Load all the sample trips
 
-`npm run db:seed` ne charge que l'Islande. Pour retrouver **les quatre voyages**,
-lancez aussi (après `npx prisma db push`) :
+`npm run db:seed` only loads Iceland. To get **all four trips**, also run (after
+`npx prisma db push`):
 
 ```bash
-npm run db:seed             # Islande (réinitialise la base + admin)
+npm run db:seed             # Islande (resets the database + admin)
 npm run db:seed:albanie     # Albanie, la Riviera sauvage du Sud
 npm run db:seed:bulgarie    # Bulgarie, Sofia et les montagnes de Rila
 npm run db:seed:hurghada    # Croisière plongée — Best of Hurghada
 ```
 
-Chaque seed `db:seed:<slug>` est **idempotent** : il ne recrée que son propre
-voyage (sans effacer les autres) et garantit la présence de l'admin.
+Each `db:seed:<slug>` is **idempotent**: it only recreates its own trip (without
+deleting the others) and ensures the admin account exists.
 
-## Variables d'environnement
+## Environment variables
 
-| Variable       | Rôle                                                       |
+| Variable       | Purpose                                                    |
 | -------------- | ---------------------------------------------------------- |
-| `DATABASE_URL` | Connexion base. SQLite en dev, Postgres en prod.           |
-| `AUTH_SECRET`  | Secret de signature des sessions. **À changer en prod** (`openssl rand -base64 32`). |
+| `DATABASE_URL` | Database connection. SQLite in dev, Postgres in prod.      |
+| `AUTH_SECRET`  | Session signing secret. **Change it in production** (`openssl rand -base64 32`). |
 
-## Passer en production (PostgreSQL)
+## Going to production (PostgreSQL)
 
-1. Dans `prisma/schema.prisma`, remplacez `provider = "sqlite"` par
+1. In `prisma/schema.prisma`, replace `provider = "sqlite"` with
    `provider = "postgresql"`.
-2. Mettez `DATABASE_URL` sur votre base (Neon, Supabase, Vercel Postgres…).
-3. `npx prisma db push` puis `npm run db:seed` (optionnel).
-4. Définissez un `AUTH_SECRET` fort.
-5. Déployez (Vercel recommandé). Le build lance `prisma generate` automatiquement.
+2. Point `DATABASE_URL` at your database (Neon, Supabase, Vercel Postgres…).
+3. `npx prisma db push` then `npm run db:seed` (optional).
+4. Set a strong `AUTH_SECRET`.
+5. Deploy (Vercel recommended). The build runs `prisma generate` automatically.
 
-> Sur un hébergement serverless, SQLite n'est pas persistant : utilisez Postgres.
+> On serverless hosting, SQLite is not persistent: use Postgres.
 
-## Partager le site avec des amis (Cloudflare Tunnel)
+## Share the site with friends (Cloudflare Tunnel)
 
-Pour obtenir une **URL publique** (`https://xxxx.trycloudflare.com`) sans rien
-déployer : le site tourne sur votre machine et `cloudflared` l'expose via le
-réseau Cloudflare. Aucun compte Cloudflare requis, aucune migration de base.
+To get a **public URL** (`https://xxxx.trycloudflare.com`) without deploying
+anything: the site runs on your machine and `cloudflared` exposes it through the
+Cloudflare network. No Cloudflare account required, no database migration.
 
-**1. Installer `cloudflared`** (une seule fois) :
+**1. Install `cloudflared`** (once):
 
 ```bash
 # Windows (PowerShell)
 winget install --id Cloudflare.cloudflared -e
 # macOS
 brew install cloudflared
-# Linux : voir https://pkg.cloudflare.com/ (paquet cloudflared)
+# Linux: see https://pkg.cloudflare.com/ (cloudflared package)
 ```
 
-> Sous Windows, rouvrez le terminal après l'installation pour rafraîchir le PATH.
+> On Windows, reopen the terminal after installation to refresh the PATH.
 
-**2. Lancer le site en production** (plus stable que `npm run dev`) :
+**2. Run the site in production** (more stable than `npm run dev`):
 
 ```bash
 npm run build
-npm start            # sert le site sur http://localhost:3000
+npm start            # serves the site on http://localhost:3000
 ```
 
-**3. Ouvrir le tunnel** (dans un second terminal, en laissant le site tourner) :
+**3. Open the tunnel** (in a second terminal, leaving the site running):
 
 ```bash
 cloudflared tunnel --url http://localhost:3000
 ```
 
-`cloudflared` affiche alors l'URL publique à partager, par exemple :
+`cloudflared` then prints the public URL to share, for example:
 
 ```
 +--------------------------------------------------------------------+
@@ -106,31 +108,32 @@ cloudflared tunnel --url http://localhost:3000
 +--------------------------------------------------------------------+
 ```
 
-**À savoir :**
+**Good to know:**
 
-- **URL éphémère** : elle change à chaque relance de `cloudflared`. Tant que les
-  deux processus (`npm start` **et** `cloudflared`) tournent, le lien reste valide.
-- **Votre PC = le serveur** : si la machine s'éteint ou se met en veille, le lien
-  tombe. Pour arrêter le partage, coupez le process `cloudflared` (puis `npm start`).
-- **Sécurité** : l'URL étant publique, n'importe qui peut ouvrir `/admin/login`.
-  Avant de diffuser largement, changez le mot de passe admin et retirez l'indice de
-  démo affiché sur la page de connexion.
+- **Ephemeral URL**: it changes every time you restart `cloudflared`. As long as
+  both processes (`npm start` **and** `cloudflared`) are running, the link stays
+  valid.
+- **Your PC is the server**: if the machine shuts down or sleeps, the link goes
+  down. To stop sharing, kill the `cloudflared` process (then `npm start`).
+- **Security**: since the URL is public, anyone can open `/admin/login`. Before
+  sharing widely, change the admin password and remove the demo hint shown on the
+  login page.
 
-> Besoin d'un lien permanent (24/7) ? Il faut un vrai hébergement : soit Vercel +
-> Postgres (cf. section précédente), soit Cloudflare Pages/Workers via l'adaptateur
-> OpenNext **avec** migration de SQLite vers Cloudflare D1 ou Neon.
+> Need a permanent (24/7) link? You need real hosting: either Vercel + Postgres
+> (see the previous section), or Cloudflare Pages/Workers via the OpenNext adapter
+> **with** a migration from SQLite to Cloudflare D1 or Neon.
 
-## Médias
+## Media
 
-Les images et vidéos sont référencées par **URL** (pas d'upload). Pour une vidéo,
-utilisez une URL d'**embed** (ex. `https://www.youtube.com/embed/ID`). Si une
-image casse, un dégradé stylisé portant le nom du lieu s'affiche à la place.
+Images and videos are referenced by **URL** (no upload). For a video, use an
+**embed** URL (e.g. `https://www.youtube.com/embed/ID`). If an image fails to
+load, a styled gradient bearing the place name is shown instead.
 
-Dans l'éditeur, le champ médias d'une étape attend un tableau JSON :
+In the editor, a step's media field expects a JSON array:
 
 ```json
 [
-  { "type": "image", "url": "https://…", "caption": "Légende" },
+  { "type": "image", "url": "https://…", "caption": "Caption" },
   { "type": "video", "url": "https://www.youtube.com/embed/…" }
 ]
 ```
@@ -138,33 +141,34 @@ Dans l'éditeur, le champ médias d'une étape attend un tableau JSON :
 ## Structure
 
 ```
-prisma/            schéma + seeds : seed.ts (Islande) et seed-<slug>.ts par voyage
-src/app/           pages (accueil, /voyage/[slug], /admin/*) + API
+prisma/            schema + seeds: seed.ts (Iceland) and one seed-<slug>.ts per trip
+src/app/           pages (home, /voyage/[slug], /admin/*) + API
 src/components/    Hero, RouteMap, DaySection, OptionToggle, TotalBar, Recap…
-src/lib/           prisma, auth (session JWT), trips, format
+src/lib/           prisma, auth (JWT session), trips, format
 ```
 
-## Ajouter un voyage à partir d'un PDF (avec Claude Code)
+## Add a trip from a PDF (with Claude Code)
 
-Les voyages Albanie, Bulgarie et Hurghada ont été créés ainsi : on fournit un PDF
-décrivant le voyage et on laisse Claude Code le transformer en données conformes
-au schéma, sans toucher au design.
+The Albania, Bulgaria and Hurghada trips were created this way: you provide a PDF
+describing the trip and let Claude Code turn it into data that conforms to the
+schema, without touching the design.
 
-**Marche à suivre :**
+**How to do it:**
 
-1. Placez le descriptif du voyage à la racine du projet, nommé **`PLAN.pdf`**.
-2. Ouvrez Claude Code dans le dossier du projet.
-3. Joignez `PLAN.pdf` à la conversation et collez le prompt ci-dessous.
-4. À la fin, Claude aura créé `prisma/seed-<slug>.ts` + un script
-   `npm run db:seed:<slug>` ; relancez le build/serveur pour voir le voyage.
+1. Put the trip description at the project root, named **`PLAN.pdf`**.
+2. Open Claude Code in the project folder.
+3. Attach `PLAN.pdf` to the conversation and paste the prompt below.
+4. When done, Claude will have created `prisma/seed-<slug>.ts` + an
+   `npm run db:seed:<slug>` script; restart the build/server to see the trip.
 
-> Convention maison appliquée par les seeds existants : prix **en centimes**,
-> coordonnées `lat`/`lng` réelles (sinon la carte ne trace pas), photos libres
-> **Wikimedia Commons** servies via
-> `https://commons.wikimedia.org/wiki/Special:FilePath/<Fichier>?width=1600`
-> (vignette légère, et fallback dégradé si l'URL casse).
+> House conventions applied by the existing seeds: prices **in cents**, real
+> `lat`/`lng` coordinates (otherwise the map won't draw), free **Wikimedia
+> Commons** photos served via
+> `https://commons.wikimedia.org/wiki/Special:FilePath/<File>?width=1600`
+> (lightweight thumbnail, with a gradient fallback if the URL breaks).
 
-**Prompt à donner à Claude Code :**
+**Prompt to give Claude Code** (in French — it produces French trip content to
+match the bundled trips; adapt it to another language if you prefer):
 
 ```text
 Contexte
