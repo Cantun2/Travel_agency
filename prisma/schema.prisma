@@ -1,0 +1,82 @@
+// Schéma de données — Voyage
+// Dev : SQLite. Prod : passez `provider` à "postgresql" et DATABASE_URL à Neon/Supabase.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Compte administrateur (auteur des voyages)
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+// Un voyage = une proposition complète
+model Trip {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  subtitle  String?
+  intro     String? // texte d'introduction (hero)
+  heroImage String?
+  currency  String   @default("EUR")
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  steps      Step[]
+  selections Selection[]
+}
+
+// Une étape / journée de l'itinéraire
+model Step {
+  id          String  @id @default(cuid())
+  tripId      String
+  trip        Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  order       Int // ordre dans l'itinéraire
+  day         String? // ex. "Jour 03" ou "Jours 4–5"
+  place       String // ex. "Vík í Mýrdal"
+  lat         Float? // coordonnées pour la carte
+  lng         Float?
+  title       String
+  description String?
+  basePrice   Int     @default(0) // en centimes
+  media       String  @default("[]") // JSON: [{type:'image'|'video', url, caption}]
+
+  options Option[]
+
+  @@index([tripId, order])
+}
+
+// Une expérience optionnelle, cochable par l'utilisateur
+model Option {
+  id                String  @id @default(cuid())
+  stepId            String
+  step              Step    @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  label             String
+  description       String?
+  price             Int     @default(0) // en centimes
+  selectedByDefault Boolean @default(false)
+  order             Int     @default(0)
+
+  @@index([stepId, order])
+}
+
+// Une sélection enregistrée par un visiteur (demande de devis)
+model Selection {
+  id           String   @id @default(cuid())
+  tripId       String
+  trip         Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  optionIds    String   @default("[]") // JSON: string[]
+  total        Int      @default(0)
+  contactName  String?
+  contactEmail String?
+  createdAt    DateTime @default(now())
+}

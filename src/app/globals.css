@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ember: #e2552d;
+  --font-fraunces: "Fraunces Variable", Georgia, serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: #f7f4ec;
+  color: #0e1e33;
+  font-feature-settings: "ss01", "cv05";
+}
+
+/* L'œil de l'eyebrow cartographique */
+.eyebrow {
+  font-family: var(--font-geist-mono), monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+/* Filet fin façon trait de carte */
+.hairline {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(14, 30, 51, 0.22),
+    transparent
+  );
+}
+
+/* Le tracé Leaflet animé */
+.route-draw {
+  stroke-dasharray: var(--len);
+  stroke-dashoffset: calc(var(--len) * (1 - var(--p, 0)));
+  transition: stroke-dashoffset 0.25s linear;
+}
+
+/* La carte Leaflet doit hériter d'un fond sombre cohérent */
+.leaflet-container {
+  background: #0a1626 !important;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.leaflet-control-attribution {
+  font-size: 9px;
+  background: rgba(7, 15, 28, 0.7) !important;
+  color: #6b7a90 !important;
+}
+.leaflet-control-attribution a {
+  color: #90a0b5 !important;
+}
+
+/* Cacher la grille de tuiles brute le temps du fade */
+.leaflet-tile {
+  filter: saturate(0.55) brightness(0.78) contrast(1.05);
+}
+
+::selection {
+  background: rgba(226, 85, 45, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
